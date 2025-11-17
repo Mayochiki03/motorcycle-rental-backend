@@ -190,17 +190,37 @@ public class MotorcycleServiceImpl implements MotorcycleService {
         Motorcycles existingMotorcycle = motorcycleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ไม่พบข้อมูลรถ"));
 
-        // Update fields
-        existingMotorcycle.setBrand(motorcycle.getBrand());
-        existingMotorcycle.setModel(motorcycle.getModel());
-        existingMotorcycle.setYear(motorcycle.getYear());
-        existingMotorcycle.setColor(motorcycle.getColor());
-        existingMotorcycle.setEngineCc(motorcycle.getEngineCc());
-        existingMotorcycle.setPricePerDay(motorcycle.getPricePerDay());
-        existingMotorcycle.setImageUrl(motorcycle.getImageUrl());
-        existingMotorcycle.setDescription(motorcycle.getDescription());
-        existingMotorcycle.setMaintenanceStatus(motorcycle.getMaintenanceStatus());
-        existingMotorcycle.setIsAvailable(motorcycle.getIsAvailable());
+        // อัพเดทเฉพาะ field ที่ไม่ null
+        if (motorcycle.getBrand() != null) {
+            existingMotorcycle.setBrand(motorcycle.getBrand());
+        }
+        if (motorcycle.getModel() != null) {
+            existingMotorcycle.setModel(motorcycle.getModel());
+        }
+        if (motorcycle.getYear() != null) {
+            existingMotorcycle.setYear(motorcycle.getYear());
+        }
+        if (motorcycle.getColor() != null) {
+            existingMotorcycle.setColor(motorcycle.getColor());
+        }
+        if (motorcycle.getEngineCc() != null) {
+            existingMotorcycle.setEngineCc(motorcycle.getEngineCc());
+        }
+        if (motorcycle.getPricePerDay() != null) {
+            existingMotorcycle.setPricePerDay(motorcycle.getPricePerDay());
+        }
+        if (motorcycle.getImageUrl() != null) {
+            existingMotorcycle.setImageUrl(motorcycle.getImageUrl());
+        }
+        if (motorcycle.getDescription() != null) {
+            existingMotorcycle.setDescription(motorcycle.getDescription());
+        }
+        if (motorcycle.getMaintenanceStatus() != null) {
+            existingMotorcycle.setMaintenanceStatus(motorcycle.getMaintenanceStatus());
+        }
+        if (motorcycle.getIsAvailable() != null) {
+            existingMotorcycle.setIsAvailable(motorcycle.getIsAvailable());
+        }
 
         Motorcycles updatedMotorcycle = motorcycleRepository.save(existingMotorcycle);
         return convertToResponse(updatedMotorcycle);

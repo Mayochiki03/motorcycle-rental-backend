@@ -1,6 +1,7 @@
 package com.temptation.motorcyclerental.serviceimpl;
 
 import com.temptation.motorcyclerental.domain.Discounts;
+import com.temptation.motorcyclerental.domain.DiscountType;
 import com.temptation.motorcyclerental.obj.request.DiscountRequest;
 import com.temptation.motorcyclerental.obj.response.DiscountResponse;
 import com.temptation.motorcyclerental.repo.DiscountRepository;
@@ -25,10 +26,18 @@ public class DiscountServiceImpl implements DiscountService {
             throw new RuntimeException("รหัสส่วนลดนี้ใช้งานแล้ว");
         }
 
+        // แปลง discountType จาก String เป็น Enum (รองรับทั้งตัวใหญ่และตัวเล็ก)
+        DiscountType discountType;
+        try {
+            discountType = DiscountType.valueOf(request.getDiscountType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("ประเภทส่วนลดไม่ถูกต้อง: " + request.getDiscountType());
+        }
+
         Discounts discount = new Discounts();
         discount.setDiscountId("DISC_" + UUID.randomUUID().toString().substring(0, 8));
         discount.setDiscountCode(request.getDiscountCode());
-        discount.setDiscountType(com.temptation.motorcyclerental.domain.DiscountType.valueOf(request.getDiscountType()));
+        discount.setDiscountType(discountType);
         discount.setDiscountValue(request.getDiscountValue());
         discount.setMinRentalDays(request.getMinRentalDays());
         discount.setMaxDiscountAmount(request.getMaxDiscountAmount());
@@ -60,8 +69,16 @@ public class DiscountServiceImpl implements DiscountService {
         Discounts discount = discountRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ไม่พบส่วนลด"));
 
+        // แปลง discountType จาก String เป็น Enum (รองรับทั้งตัวใหญ่และตัวเล็ก)
+        DiscountType discountType;
+        try {
+            discountType = DiscountType.valueOf(request.getDiscountType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("ประเภทส่วนลดไม่ถูกต้อง: " + request.getDiscountType());
+        }
+
         discount.setDiscountCode(request.getDiscountCode());
-        discount.setDiscountType(com.temptation.motorcyclerental.domain.DiscountType.valueOf(request.getDiscountType()));
+        discount.setDiscountType(discountType);
         discount.setDiscountValue(request.getDiscountValue());
         discount.setMinRentalDays(request.getMinRentalDays());
         discount.setMaxDiscountAmount(request.getMaxDiscountAmount());

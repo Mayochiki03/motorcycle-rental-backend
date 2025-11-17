@@ -25,7 +25,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -39,16 +39,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/reservations/calculate-price").permitAll()
 
                         // Customer endpoints
-                        .requestMatchers("/api/reservations/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE")
-                        .requestMatchers("/api/payments/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE")
-                        .requestMatchers("/api/users/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE")
+                        .requestMatchers("/api/reservations/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE", "OWNER")
+                        .requestMatchers("/api/payments/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE", "OWNER")
+                        .requestMatchers("/api/users/**").hasAnyRole("CUSTOMER", "ADMIN", "EMPLOYEE", "OWNER")
 
                         // Employee endpoints
-                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN", "OWNER")
 
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/discounts/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                        // Admin endpoints - เปลี่ยนเป็น hasAnyRole
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "OWNER")
+                        .requestMatchers("/api/discounts/**").hasAnyRole("ADMIN", "EMPLOYEE", "OWNER")
 
                         // Any other request needs authentication
                         .anyRequest().authenticated()

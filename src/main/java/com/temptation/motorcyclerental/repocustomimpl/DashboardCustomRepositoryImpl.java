@@ -36,7 +36,7 @@ public class DashboardCustomRepositoryImpl implements DashboardCustomRepository 
         stats.put("activeReservations", activeReservations);
 
         // Total revenue
-        String revenueQuery = "SELECT COALESCE(SUM(r.finalPrice), 0) FROM Reservations r WHERE r.status = 'COMPLETED'";
+        String revenueQuery = "SELECT COALESCE(SUM(r.finalPrice), 0) FROM Reservations r WHERE r.status IN ('CONFIRMED', 'ACTIVE', 'COMPLETED')";
         BigDecimal totalRevenue = entityManager.createQuery(revenueQuery, BigDecimal.class).getSingleResult();
         stats.put("totalRevenue", totalRevenue);
 
@@ -119,7 +119,7 @@ public class DashboardCustomRepositoryImpl implements DashboardCustomRepository 
 
     @Override
     public BigDecimal getTotalRevenue() {
-        String jpql = "SELECT COALESCE(SUM(r.finalPrice), 0) FROM Reservations r WHERE r.status = 'COMPLETED'";
+        String jpql = "SELECT COALESCE(SUM(r.finalPrice), 0) FROM Reservations r WHERE r.status IN ('CONFIRMED', 'ACTIVE', 'COMPLETED')";
         return entityManager.createQuery(jpql, BigDecimal.class).getSingleResult();
     }
 }

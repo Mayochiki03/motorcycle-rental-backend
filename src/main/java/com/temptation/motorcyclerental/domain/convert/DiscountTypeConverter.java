@@ -14,6 +14,14 @@ public class DiscountTypeConverter implements AttributeConverter<DiscountType, S
 
     @Override
     public DiscountType convertToEntityAttribute(String dbData) {
-        return DiscountType.fromString(dbData);
+        if (dbData == null) {
+            return null;
+        }
+        try {
+            // รองรับทั้งตัวใหญ่และตัวเล็ก
+            return DiscountType.valueOf(dbData.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid discount type: " + dbData);
+        }
     }
 }
