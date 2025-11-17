@@ -87,19 +87,32 @@ public class MotorcycleCustomRepositoryImpl implements MotorcycleCustomRepositor
 
     @Override
     public List<Motorcycles> findAvailableMotorcycles(LocalDate startDate, LocalDate endDate) {
+        System.out.println("=== FIND AVAILABLE MOTORCYCLES ===");
+        System.out.println("Start Date: " + startDate);
+        System.out.println("End Date: " + endDate);
+
         String jpql = "SELECT m FROM Motorcycles m WHERE m.isAvailable = true " +
                 "AND m.maintenanceStatus = 'READY' " +
                 "AND m.motorcycleId NOT IN (" +
                 "SELECT r.motorcycleId FROM Reservations r " +
-                "WHERE r.status IN ('CONFIRMED', 'ACTIVE') " +
-                "AND ((r.startDate BETWEEN :startDate AND :endDate) " +
-                "OR (r.endDate BETWEEN :startDate AND :endDate) " +
-                "OR (r.startDate <= :startDate AND r.endDate >= :endDate)))";
+                "WHERE r.status IN ('PENDING', 'CONFIRMED', 'APPROVED', 'ACTIVE') " +  // เพิ่ม status
+                "AND (" +
+                "   (r.startDate <= :endDate AND r.endDate >= :startDate) OR " +      // ซ้อนทับทั้งหมด
+                "   (r.startDate BETWEEN :startDate AND :endDate) OR " +              // เริ่มต้นในช่วง
+                "   (r.endDate BETWEEN :startDate AND :endDate) OR " +                // สิ้นสุดในช่วง
+                "   (:startDate BETWEEN r.startDate AND r.endDate) OR " +             // วันที่เริ่มอยู่ในช่วงจอง
+                "   (:endDate BETWEEN r.startDate AND r.endDate)" +                   // วันที่สิ้นสุดอยู่ในช่วงจอง
+                "))";
 
-        return entityManager.createQuery(jpql, Motorcycles.class)
+        List<Motorcycles> result = entityManager.createQuery(jpql, Motorcycles.class)
                 .setParameter("startDate", startDate)
                 .setParameter("endDate", endDate)
                 .getResultList();
+
+        System.out.println("Available motorcycles found: " + result.size());
+        result.forEach(m -> System.out.println(" - " + m.getMotorcycleId()));
+
+        return result;
     }
 
     @Override

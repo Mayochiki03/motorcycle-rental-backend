@@ -41,6 +41,26 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException("รถไม่พร้อมให้บริการ");
         }
 
+        // ✅ ตรวจสอบการจองซ้อน
+        List<Reservations> existingReservations = reservationRepository.findByMotorcycleId(request.getMotorcycleId());
+
+        for (Reservations existing : existingReservations) {
+            // ข้ามการจองที่ยกเลิกแล้ว
+            if (existing.getStatus() == ReservationStatus.CANCELLED) {
+                continue;
+            }
+
+            // ตรวจสอบวันที่ซ้อนทับ
+            boolean isOverlap = !(request.getEndDate().isBefore(existing.getStartDate()) ||
+                    request.getStartDate().isAfter(existing.getEndDate()));
+
+            if (isOverlap) {
+                throw new RuntimeException("รถไม่ว่างในช่วงวันที่ " +
+                        existing.getStartDate() + " ถึง " + existing.getEndDate() +
+                        " กรุณาเลือกวันที่อื่น");
+            }
+        }
+
         // Calculate price
         long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate());
         if (days <= 0) {

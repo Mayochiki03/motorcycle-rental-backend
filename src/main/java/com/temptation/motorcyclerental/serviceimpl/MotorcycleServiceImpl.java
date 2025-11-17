@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,8 +32,36 @@ public class MotorcycleServiceImpl implements MotorcycleService {
 
     @Override
     public MotorcycleResponse getMotorcycleById(String id) {
-        Motorcycles motorcycle = motorcycleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ไม่พบข้อมูลรถ"));
+        System.out.println(" SERVICE: Searching for motorcycle ID: " + id);
+
+        //  ตรวจสอบก่อนว่า repository มีข้อมูลอะไรบ้าง
+        List<Motorcycles> allMotorcycles = motorcycleRepository.findAll();
+        System.out.println(" All motorcycles in repository:");
+        allMotorcycles.forEach(m ->
+                System.out.println("  - " + m.getMotorcycleId() + " : " + m.getBrand() + " " + m.getModel())
+        );
+
+        // ตรวจสอบว่า ID นี้มีอยู่ใน repository หรือไม่
+        boolean exists = motorcycleRepository.existsById(id);
+        System.out.println(" Motorcycle exists by ID '" + id + "': " + exists);
+
+        //  ลองหาโดยตรง
+        Optional<Motorcycles> motorcycleOpt = motorcycleRepository.findById(id);
+
+        if (motorcycleOpt.isEmpty()) {
+            System.out.println(" ERROR: Motorcycle not found with ID: " + id);
+            System.out.println(" Available IDs: " +
+                    allMotorcycles.stream()
+                            .map(Motorcycles::getMotorcycleId)
+                            .collect(Collectors.toList())
+            );
+            throw new RuntimeException("ไม่พบข้อมูลรถด้วย ID: " + id);
+        }
+
+        Motorcycles motorcycle = motorcycleOpt.get();
+        System.out.println(" SUCCESS: Found motorcycle: " + motorcycle.getMotorcycleId());
+        System.out.println(" Image URL: " + motorcycle.getImageUrl());
+
         return convertToResponse(motorcycle);
     }
 
@@ -46,8 +75,36 @@ public class MotorcycleServiceImpl implements MotorcycleService {
         System.out.println("MaxPrice: " + request.getMaxPrice());
         System.out.println("MinCC: " + request.getMinCC());
         System.out.println("MaxCC: " + request.getMaxCC());
+        System.out.println("StartDate: " + request.getStartDate());
+        System.out.println("EndDate: " + request.getEndDate());
 
-        // เริ่มจากข้อมูลทั้งหมด
+        // ถ้ามีวันที่ ให้เช็ค availability ตามวันที่
+        if (request.getStartDate() != null && request.getEndDate() != null) {
+            System.out.println("✅ Using date-based availability check");
+            List<Motorcycles> availableMotorcycles = motorcycleCustomRepository.findAvailableMotorcycles(
+                    request.getStartDate(), request.getEndDate());
+
+            // Filter ตาม criteria อื่นๆ จาก motorcycles ที่ว่างตามวันที่
+            List<Motorcycles> filteredMotorcycles = availableMotorcycles.stream()
+                    .filter(m -> request.getBrand() == null || request.getBrand().isEmpty() ||
+                            m.getBrand().equalsIgnoreCase(request.getBrand()))
+                    .filter(m -> request.getModel() == null || request.getModel().isEmpty() ||
+                            m.getModel().toLowerCase().contains(request.getModel().toLowerCase()))
+                    .filter(m -> request.getIsAvailable() == null || m.getIsAvailable().equals(request.getIsAvailable()))
+                    .filter(m -> request.getMinPrice() == null || m.getPricePerDay().compareTo(request.getMinPrice()) >= 0)
+                    .filter(m -> request.getMaxPrice() == null || m.getPricePerDay().compareTo(request.getMaxPrice()) <= 0)
+                    .filter(m -> request.getMinCC() == null || (m.getEngineCc() != null && m.getEngineCc() >= request.getMinCC()))
+                    .filter(m -> request.getMaxCC() == null || (m.getEngineCc() != null && m.getEngineCc() <= request.getMaxCC()))
+                    .collect(Collectors.toList());
+
+            System.out.println("Found " + filteredMotorcycles.size() + " available motorcycles after date filtering");
+            return filteredMotorcycles.stream()
+                    .map(this::convertToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // ถ้าไม่มีวันที่ ให้ใช้ logic เดิม (เช็คแค่ isAvailable field)
+        System.out.println("ℹ️ Using static availability check (no dates provided)");
         List<Motorcycles> motorcycles = motorcycleRepository.findAll();
 
         // Filter ตาม criteria ที่ส่งมา
@@ -93,7 +150,7 @@ public class MotorcycleServiceImpl implements MotorcycleService {
                     .collect(Collectors.toList());
         }
 
-        System.out.println("Found " + motorcycles.size() + " motorcycles after filtering");
+        System.out.println("Found " + motorcycles.size() + " motorcycles after static filtering");
         return motorcycles.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -101,7 +158,17 @@ public class MotorcycleServiceImpl implements MotorcycleService {
 
     @Override
     public List<MotorcycleResponse> getAvailableMotorcycles(LocalDate startDate, LocalDate endDate) {
+        System.out.println("=== GET AVAILABLE MOTORCYCLES ===");
+        System.out.println("Start Date: " + startDate);
+        System.out.println("End Date: " + endDate);
+
         List<Motorcycles> motorcycles = motorcycleCustomRepository.findAvailableMotorcycles(startDate, endDate);
+
+        System.out.println("Found " + motorcycles.size() + " available motorcycles:");
+        motorcycles.forEach(m ->
+                System.out.println(" - " + m.getMotorcycleId() + ": " + m.getBrand() + " " + m.getModel())
+        );
+
         return motorcycles.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -159,6 +226,7 @@ public class MotorcycleServiceImpl implements MotorcycleService {
         response.setBrand(motorcycle.getBrand());
         response.setModel(motorcycle.getModel());
         response.setYear(motorcycle.getYear());
+        response.setImageUrl(motorcycle.getImageUrl());
         response.setLicensePlate(motorcycle.getLicensePlate());
         response.setColor(motorcycle.getColor());
         response.setEngineCc(motorcycle.getEngineCc());
